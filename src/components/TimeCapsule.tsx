@@ -41,6 +41,29 @@ export const TimeCapsule = () => {
     });
   };
 
+  const handleImageUpload = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (file) {
+        toast({
+          title: "Изображение добавлено",
+          description: `Файл "${file.name}" успешно прикреплён к капсуле`,
+        });
+      }
+    };
+    input.click();
+  };
+
+  const handleAddGift = () => {
+    toast({
+      title: "Добавление подарка",
+      description: "Скоро вы сможете прикрепить виртуальный подарок к капсуле времени!",
+    });
+  };
+
   return (
     <Card className={cn(
       "w-full max-w-md mx-auto p-6 space-y-4 transition-all duration-500",
@@ -112,6 +135,7 @@ export const TimeCapsule = () => {
             size="icon"
             className="flex-shrink-0"
             disabled={isSealed}
+            onClick={handleImageUpload}
           >
             <Image className="w-4 h-4" />
           </Button>
@@ -121,6 +145,7 @@ export const TimeCapsule = () => {
             size="icon"
             className="flex-shrink-0"
             disabled={isSealed}
+            onClick={handleAddGift}
           >
             <Gift className="w-4 h-4" />
           </Button>
