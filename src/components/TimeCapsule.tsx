@@ -4,6 +4,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
+import { format } from "date-fns";
 import { CapsuleHeader } from "./capsule/CapsuleHeader";
 import { CapsuleContent } from "./capsule/CapsuleContent";
 import { CapsuleActions } from "./capsule/CapsuleActions";
