@@ -25,10 +25,10 @@ export default {
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
         capsule: {
-          100: "#FEF7CD",
-          200: "#FEC6A1",
-          300: "#E5DEFF",
-          400: "#D3E4FD",
+          100: "#FEF7CD", // Soft Yellow
+          200: "#FEC6A1", // Warm Orange
+          300: "#E5DEFF", // Soft Purple
+          400: "#D3E4FD", // Soft Blue
         },
         primary: {
           DEFAULT: "hsl(var(--primary))",
@@ -77,12 +77,17 @@ export default {
           "0%": { filter: "sepia(0)" },
           "100%": { filter: "sepia(0.5)" },
         },
+        "fade-in": {
+          "0%": { opacity: "0", transform: "translateY(10px)" },
+          "100%": { opacity: "1", transform: "translateY(0)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
         "capsule-seal": "capsule-seal 1s ease-in-out",
         "fade-age": "fade-age 2s ease-in-out forwards",
+        "fade-in": "fade-in 0.5s ease-out",
       },
     },
   },
