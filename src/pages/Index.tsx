@@ -42,7 +42,7 @@ const Index = ({ session }: { session: any }) => {
         </div>
 
         {showNewCapsule ? (
-          <TimeCapsule onComplete={() => setShowNewCapsule(false)} />
+          <TimeCapsule session={session} onComplete={() => setShowNewCapsule(false)} />
         ) : (
           <Button
             onClick={() => setShowNewCapsule(true)}
@@ -64,6 +64,7 @@ const Index = ({ session }: { session: any }) => {
               >
                 <TimeCapsule
                   initialData={capsule}
+                  session={session}
                   onComplete={() => setShowNewCapsule(false)}
                 />
               </div>

@@ -15,9 +15,10 @@ import { useQueryClient } from "@tanstack/react-query";
 interface TimeCapsuleProps {
   initialData?: any;
   onComplete?: () => void;
+  session: any;
 }
 
-export const TimeCapsule = ({ initialData, onComplete }: TimeCapsuleProps) => {
+export const TimeCapsule = ({ initialData, onComplete, session }: TimeCapsuleProps) => {
   const [date, setDate] = useState<Date | undefined>(
     initialData?.open_date ? new Date(initialData.open_date) : undefined
   );
@@ -55,15 +56,14 @@ export const TimeCapsule = ({ initialData, onComplete }: TimeCapsuleProps) => {
 
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("time_capsules").insert([
-          {
-            title,
-            message,
-            open_date: date.toISOString(),
-            is_sealed: true,
-            image_url: imageUrl,
-          },
-        ]);
+        const { error } = await supabase.from("time_capsules").insert({
+          title,
+          message,
+          open_date: date.toISOString(),
+          is_sealed: true,
+          image_url: imageUrl,
+          user_id: session.user.id
+        });
 
         if (error) throw error;
       }
