@@ -3,19 +3,38 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const Auth = () => {
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLogin, setIsLogin] = useState(true);
+  const [error, setError] = useState("");
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  const validatePassword = (password: string) => {
+    if (password.length < 6) {
+      return "Пароль должен содержать минимум 6 символов";
+    }
+    return null;
+  };
+
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError("");
+
+    if (!isLogin) {
+      const passwordError = validatePassword(password);
+      if (passwordError) {
+        setError(passwordError);
+        return;
+      }
+    }
+
     setLoading(true);
 
     try {
@@ -38,11 +57,15 @@ const Auth = () => {
         });
       }
     } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Ошибка!",
-        description: error.message,
-      });
+      if (error.message === "Password should be at least 6 characters") {
+        setError("Пароль должен содержать минимум 6 символов");
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Ошибка!",
+          description: error.message,
+        });
+      }
     } finally {
       setLoading(false);
     }
@@ -87,7 +110,18 @@ const Auth = () => {
               required
               className="w-full p-3 border rounded-lg bg-capsule-400 bg-opacity-20"
             />
+            {!isLogin && (
+              <p className="text-sm text-gray-500 mt-1">
+                Пароль должен содержать минимум 6 символов
+              </p>
+            )}
           </div>
+
+          {error && (
+            <Alert variant="destructive">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
 
           <Button
             type="submit"
