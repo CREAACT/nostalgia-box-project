@@ -1,5 +1,6 @@
 import { TimeCapsule } from "@/components/TimeCapsule";
 import { Button } from "@/components/ui/button";
+import { CapsuleList } from "@/components/CapsuleList";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { LogOut, Plus } from "lucide-react";
@@ -30,7 +31,7 @@ const Index = ({ session }: { session: any }) => {
       <div className="max-w-4xl mx-auto space-y-8">
         <div className="flex justify-between items-center">
           <div className="text-center space-y-4">
-            <h1 className="text-4xl font-bold">Ваши капсулы времени</h1>
+            <h1 className="text-4xl font-bold">Мои капсулы времени</h1>
             <p className="text-lg text-gray-600">
               Сохраните воспоминания для будущего
             </p>
@@ -42,7 +43,10 @@ const Index = ({ session }: { session: any }) => {
         </div>
 
         {showNewCapsule ? (
-          <TimeCapsule session={session} onComplete={() => setShowNewCapsule(false)} />
+          <TimeCapsule
+            session={session}
+            onComplete={() => setShowNewCapsule(false)}
+          />
         ) : (
           <Button
             onClick={() => setShowNewCapsule(true)}
@@ -53,24 +57,11 @@ const Index = ({ session }: { session: any }) => {
           </Button>
         )}
 
-        {isLoading ? (
-          <div className="text-center">Загрузка капсул...</div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {capsules?.map((capsule) => (
-              <div
-                key={capsule.id}
-                className="bg-capsule-100/80 rounded-lg p-6 shadow-lg hover:shadow-xl transition-all duration-300 animate-fade-in"
-              >
-                <TimeCapsule
-                  initialData={capsule}
-                  session={session}
-                  onComplete={() => setShowNewCapsule(false)}
-                />
-              </div>
-            ))}
-          </div>
-        )}
+        <CapsuleList
+          capsules={capsules || []}
+          session={session}
+          isLoading={isLoading}
+        />
       </div>
     </div>
   );
