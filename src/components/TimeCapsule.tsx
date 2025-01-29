@@ -1,16 +1,12 @@
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { format } from "date-fns";
-import { Calendar as CalendarIcon, Lock, Unlock, Image, Gift, Archive } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
+import { cn } from "@/lib/utils";
+import { CapsuleHeader } from "./capsule/CapsuleHeader";
+import { CapsuleContent } from "./capsule/CapsuleContent";
+import { CapsuleActions } from "./capsule/CapsuleActions";
 
 interface TimeCapsuleProps {
   initialData?: any;
@@ -137,6 +133,13 @@ export const TimeCapsule = ({ initialData, onComplete, session }: TimeCapsulePro
     }
   };
 
+  const handleGiftClick = () => {
+    toast({
+      title: "Добавление подарка",
+      description: "Скоро вы сможете прикрепить виртуальный подарок к капсуле времени!",
+    });
+  };
+
   return (
     <Card
       className={cn(
@@ -145,110 +148,29 @@ export const TimeCapsule = ({ initialData, onComplete, session }: TimeCapsulePro
         isSealed && "animate-capsule-seal"
       )}
     >
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Archive className="w-6 h-6" />
-          <h2 className="text-2xl font-bold">Капсула времени</h2>
-        </div>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={isSealed ? handleUnseal : handleSeal}
-        >
-          {isSealed ? <Unlock className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
-        </Button>
-      </div>
+      <CapsuleHeader
+        title={title}
+        isSealed={isSealed}
+        onSealToggle={isSealed ? handleUnseal : handleSeal}
+      />
 
-      {imageUrl && (
-        <div className="relative w-full h-48 rounded-lg overflow-hidden">
-          <img
-            src={imageUrl}
-            alt="Изображение капсулы"
-            className="w-full h-full object-cover"
-          />
-        </div>
-      )}
+      <CapsuleContent
+        title={title}
+        message={message}
+        imageUrl={imageUrl}
+        isSealed={isSealed}
+        onTitleChange={setTitle}
+        onMessageChange={setMessage}
+      />
 
-      <div className="space-y-4">
-        <Input
-          placeholder="Название капсулы"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          disabled={isSealed}
-          className="bg-white/50"
-        />
-
-        <Textarea
-          placeholder="Ваше сообщение будущему..."
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-          disabled={isSealed}
-          className={cn(
-            "min-h-[150px] bg-white/50",
-            isSealed && "animate-fade-age"
-          )}
-        />
-
-        <div className="flex items-center gap-4">
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                className={cn(
-                  "w-full justify-start text-left font-normal",
-                  !date && "text-muted-foreground"
-                )}
-                disabled={isSealed}
-              >
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {date ? format(date, "dd.MM.yyyy") : "Выберите дату открытия"}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0">
-              <Calendar
-                mode="single"
-                selected={date}
-                onSelect={setDate}
-                disabled={(date) => date < new Date()}
-                initialFocus
-              />
-            </PopoverContent>
-          </Popover>
-
-          <Button
-            variant="outline"
-            size="icon"
-            className="flex-shrink-0"
-            disabled={isSealed || uploading}
-            onClick={() => document.getElementById("image-upload")?.click()}
-          >
-            <input
-              type="file"
-              id="image-upload"
-              accept="image/*"
-              className="hidden"
-              onChange={handleImageUpload}
-              disabled={isSealed || uploading}
-            />
-            <Image className="w-4 h-4" />
-          </Button>
-
-          <Button
-            variant="outline"
-            size="icon"
-            className="flex-shrink-0"
-            disabled={isSealed}
-            onClick={() => {
-              toast({
-                title: "Добавление подарка",
-                description: "Скоро вы сможете прикрепить виртуальный подарок к капсуле времени!",
-              });
-            }}
-          >
-            <Gift className="w-4 h-4" />
-          </Button>
-        </div>
-      </div>
+      <CapsuleActions
+        date={date}
+        isSealed={isSealed}
+        uploading={uploading}
+        onDateSelect={setDate}
+        onImageUpload={handleImageUpload}
+        onGiftClick={handleGiftClick}
+      />
     </Card>
   );
 };
