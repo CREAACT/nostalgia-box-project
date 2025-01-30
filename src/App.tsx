@@ -39,18 +39,13 @@ const App = () => {
     // Set up auth state listener
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED') {
-        // Handle sign out and token refresh events
-        setSession(session);
-      } else if (event === 'SIGNED_IN') {
-        setSession(session);
-      } else if (event === 'USER_DELETED') {
-        setSession(null);
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      if (!session) {
         toast({
           variant: "destructive",
-          title: "Аккаунт удален",
-          description: "Ваш аккаунт был удален",
+          title: "Сессия завершена",
+          description: "Пожалуйста, войдите снова",
         });
       }
     });

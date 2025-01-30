@@ -8,6 +8,19 @@ import { format } from "date-fns";
 import { CapsuleHeader } from "./capsule/CapsuleHeader";
 import { CapsuleContent } from "./capsule/CapsuleContent";
 import { CapsuleActions } from "./capsule/CapsuleActions";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Button } from "./ui/button";
+import { Star, Trash } from "lucide-react";
 
 interface TimeCapsuleProps {
   initialData?: any;
@@ -24,9 +37,59 @@ export const TimeCapsule = ({ initialData, onComplete, session }: TimeCapsulePro
   const [isSealed, setIsSealed] = useState(initialData?.is_sealed || false);
   const [imageUrl, setImageUrl] = useState(initialData?.image_url || "");
   const [uploading, setUploading] = useState(false);
+  const [isFavorite, setIsFavorite] = useState(initialData?.is_favorite || false);
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  const handleDelete = async () => {
+    try {
+      const { error } = await supabase
+        .from("time_capsules")
+        .delete()
+        .eq("id", initialData.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Капсула удалена",
+        description: "Капсула времени была успешно удалена",
+      });
+      queryClient.invalidateQueries({ queryKey: ["capsules"] });
+    } catch (error: any) {
+      toast({
+        title: "Ошибка удаления",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleToggleFavorite = async () => {
+    try {
+      const { error } = await supabase
+        .from("time_capsules")
+        .update({ is_favorite: !isFavorite })
+        .eq("id", initialData.id);
+
+      if (error) throw error;
+
+      setIsFavorite(!isFavorite);
+      toast({
+        title: isFavorite ? "Удалено из избранного" : "Добавлено в избранное",
+        description: isFavorite
+          ? "Капсула удалена из избранного"
+          : "Капсула добавлена в избранное",
+      });
+      queryClient.invalidateQueries({ queryKey: ["capsules"] });
+    } catch (error: any) {
+      toast({
+        title: "Ошибка",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
 
   const handleSeal = async () => {
     if (!date || !message || !title) {
@@ -149,11 +212,54 @@ export const TimeCapsule = ({ initialData, onComplete, session }: TimeCapsulePro
         isSealed && "animate-capsule-seal"
       )}
     >
-      <CapsuleHeader
-        title={title}
-        isSealed={isSealed}
-        onSealToggle={isSealed ? handleUnseal : handleSeal}
-      />
+      <div className="flex justify-between items-center">
+        <CapsuleHeader
+          title={title}
+          isSealed={isSealed}
+          onSealToggle={isSealed ? handleUnseal : handleSeal}
+        />
+        <div className="flex gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleToggleFavorite}
+            className={cn(
+              "hover:bg-yellow-100",
+              isFavorite && "text-yellow-500"
+            )}
+          >
+            <Star className={cn("w-4 h-4", isFavorite && "fill-current")} />
+          </Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="hover:bg-red-100 hover:text-red-500"
+              >
+                <Trash className="w-4 h-4" />
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Удалить капсулу?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Это действие нельзя отменить. Капсула будет удалена навсегда.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Отмена</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={handleDelete}
+                  className="bg-red-500 hover:bg-red-600"
+                >
+                  Удалить
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
+      </div>
 
       <CapsuleContent
         title={title}
