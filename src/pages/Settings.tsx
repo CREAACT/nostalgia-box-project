@@ -19,7 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import {
   Dialog,
   DialogContent,
@@ -116,12 +116,31 @@ export default function Settings({ session }: { session: any }) {
       return;
     }
 
+    if (newPassword === oldPassword) {
+      toast({
+        variant: "destructive",
+        title: "Ошибка",
+        description: "Новый пароль должен отличаться от старого",
+      });
+      return;
+    }
+
     try {
       const { error } = await supabase.auth.updateUser({
         password: newPassword,
       });
 
-      if (error) throw error;
+      if (error) {
+        if (error.message.includes("same_password")) {
+          toast({
+            variant: "destructive",
+            title: "Ошибка",
+            description: "Новый пароль должен отличаться от старого",
+          });
+          return;
+        }
+        throw error;
+      }
 
       toast({
         title: "Пароль изменен",
