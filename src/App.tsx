@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
+import { useToast } from "@/components/ui/use-toast";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
@@ -16,21 +17,48 @@ const queryClient = new QueryClient();
 const App = () => {
   const [session, setSession] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      if (error) {
+        console.error("Error getting session:", error);
+        toast({
+          variant: "destructive",
+          title: "Ошибка аутентификации",
+          description: "Пожалуйста, войдите снова",
+        });
+        setSession(null);
+      } else {
+        setSession(session);
+      }
       setLoading(false);
     });
 
+    // Set up auth state listener
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED') {
+        // Handle sign out and token refresh events
+        setSession(session);
+      } else if (event === 'SIGNED_IN') {
+        setSession(session);
+      } else if (event === 'USER_DELETED') {
+        setSession(null);
+        toast({
+          variant: "destructive",
+          title: "Аккаунт удален",
+          description: "Ваш аккаунт был удален",
+        });
+      }
     });
 
-    return () => subscription.unsubscribe();
-  }, []);
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [toast]);
 
   if (loading) {
     return null;
