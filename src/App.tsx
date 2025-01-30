@@ -63,13 +63,13 @@ const App = () => {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <div className="min-h-screen flex w-full">
-          {session && <AppSidebar />}
-          <main className="flex-1">
-            {session && <SidebarTrigger className="m-4" />}
-            <BrowserRouter>
-              <SidebarProvider>
+      <BrowserRouter>
+        <TooltipProvider>
+          <SidebarProvider>
+            <div className="min-h-screen flex w-full">
+              {session && <AppSidebar />}
+              <main className="flex-1">
+                {session && <SidebarTrigger className="m-4" />}
                 <Routes>
                   <Route
                     path="/"
@@ -109,13 +109,13 @@ const App = () => {
                   />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
-              </SidebarProvider>
-            </BrowserRouter>
-          </main>
-        </div>
-        <Toaster />
-        <Sonner />
-      </TooltipProvider>
+              </main>
+            </div>
+          </SidebarProvider>
+          <Toaster />
+          <Sonner />
+        </TooltipProvider>
+      </BrowserRouter>
     </QueryClientProvider>
   );
 };
