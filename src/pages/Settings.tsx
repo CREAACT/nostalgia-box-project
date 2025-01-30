@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "next-themes";
 import { supabase } from "@/integrations/supabase/client";
@@ -28,10 +28,11 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useQuery } from "@tanstack/react-query";
 
 export default function Settings({ session }: { session: any }) {
   const { theme, setTheme } = useTheme();
-  const [language, setLanguage] = useState("ru");
+  const [language, setLanguage] = useState(localStorage.getItem("language") || "ru");
   const [username, setUsername] = useState("");
   const [isEditingName, setIsEditingName] = useState(false);
   const [oldPassword, setOldPassword] = useState("");
@@ -42,8 +43,44 @@ export default function Settings({ session }: { session: any }) {
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  const { data: profile, refetch } = useQuery({
+    queryKey: ["profile"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", session.user.id)
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  useEffect(() => {
+    if (profile?.username) {
+      setUsername(profile.username);
+    }
+  }, [profile]);
+
   const handleUpdateUsername = async () => {
     try {
+      const { data: existingUser, error: checkError } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("username", username)
+        .neq("id", session.user.id)
+        .single();
+
+      if (existingUser) {
+        toast({
+          variant: "destructive",
+          title: "Ошибка",
+          description: "Это имя пользователя уже занято. Пожалуйста, выберите другое.",
+        });
+        return;
+      }
+
       const { error } = await supabase
         .from("profiles")
         .update({ username })
@@ -56,6 +93,7 @@ export default function Settings({ session }: { session: any }) {
         description: "Ваше новое имя пользователя сохранено",
       });
       setIsEditingName(false);
+      refetch();
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -159,6 +197,13 @@ export default function Settings({ session }: { session: any }) {
     }
   };
 
+  const handleLanguageChange = (newLanguage: string) => {
+    setLanguage(newLanguage);
+    localStorage.setItem("language", newLanguage);
+    // Здесь можно добавить логику для изменения языка в приложении
+    window.location.reload(); // Перезагружаем страницу для применения изменений
+  };
+
   const handleLogout = async () => {
     try {
       await supabase.auth.signOut();
@@ -197,7 +242,7 @@ export default function Settings({ session }: { session: any }) {
           </div>
           <div className="space-y-2">
             <Label>Язык</Label>
-            <Select value={language} onValueChange={setLanguage}>
+            <Select value={language} onValueChange={handleLanguageChange}>
               <SelectTrigger>
                 <SelectValue placeholder="Выберите язык" />
               </SelectTrigger>
@@ -236,14 +281,20 @@ export default function Settings({ session }: { session: any }) {
                 </Button>
               </div>
             ) : (
-              <Button
-                variant="outline"
-                onClick={() => setIsEditingName(true)}
-              >
-                Изменить имя
-              </Button>
+              <div className="flex gap-2 items-center">
+                <span className="text-muted-foreground">
+                  {username || "Выберите имя пользователя"}
+                </span>
+                <Button
+                  variant="outline"
+                  onClick={() => setIsEditingName(true)}
+                >
+                  Изменить имя
+                </Button>
+              </div>
             )}
           </div>
+          
           <div className="space-y-2">
             <Label>Аватар</Label>
             <div className="flex items-center gap-4">
