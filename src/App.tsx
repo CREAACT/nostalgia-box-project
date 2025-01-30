@@ -11,6 +11,8 @@ import { useToast } from "@/components/ui/use-toast";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
+import Profile from "./pages/Profile";
+import Favorites from "./pages/Favorites";
 
 const queryClient = new QueryClient();
 
@@ -85,6 +87,26 @@ const App = () => {
                     path="/auth"
                     element={
                       !session ? <Auth /> : <Navigate to="/" replace />
+                    }
+                  />
+                  <Route
+                    path="/profile"
+                    element={
+                      session ? (
+                        <Profile session={session} />
+                      ) : (
+                        <Navigate to="/auth" replace />
+                      )
+                    }
+                  />
+                  <Route
+                    path="/favorites"
+                    element={
+                      session ? (
+                        <Favorites session={session} />
+                      ) : (
+                        <Navigate to="/auth" replace />
+                      )
                     }
                   />
                   <Route path="*" element={<NotFound />} />

@@ -186,6 +186,7 @@ export type Database = {
           created_at: string
           id: string
           image_url: string | null
+          is_favorite: boolean | null
           is_sealed: boolean | null
           message: string
           open_date: string
@@ -196,6 +197,7 @@ export type Database = {
           created_at?: string
           id?: string
           image_url?: string | null
+          is_favorite?: boolean | null
           is_sealed?: boolean | null
           message: string
           open_date: string
@@ -206,6 +208,7 @@ export type Database = {
           created_at?: string
           id?: string
           image_url?: string | null
+          is_favorite?: boolean | null
           is_sealed?: boolean | null
           message?: string
           open_date?: string
