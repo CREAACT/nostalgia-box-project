@@ -8,11 +8,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { useToast } from "@/components/ui/use-toast";
+import { ThemeProvider } from "next-themes";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import Profile from "./pages/Profile";
 import Favorites from "./pages/Favorites";
+import Settings from "./pages/Settings";
 
 const queryClient = new QueryClient();
 
@@ -63,59 +65,71 @@ const App = () => {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <TooltipProvider>
-          <SidebarProvider>
-            <div className="min-h-screen flex w-full">
-              {session && <AppSidebar />}
-              <main className="flex-1">
-                {session && <SidebarTrigger className="m-4" />}
-                <Routes>
-                  <Route
-                    path="/"
-                    element={
-                      session ? (
-                        <Index session={session} />
-                      ) : (
-                        <Navigate to="/auth" replace />
-                      )
-                    }
-                  />
-                  <Route
-                    path="/auth"
-                    element={
-                      !session ? <Auth /> : <Navigate to="/" replace />
-                    }
-                  />
-                  <Route
-                    path="/profile"
-                    element={
-                      session ? (
-                        <Profile session={session} />
-                      ) : (
-                        <Navigate to="/auth" replace />
-                      )
-                    }
-                  />
-                  <Route
-                    path="/favorites"
-                    element={
-                      session ? (
-                        <Favorites session={session} />
-                      ) : (
-                        <Navigate to="/auth" replace />
-                      )
-                    }
-                  />
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </main>
-            </div>
-          </SidebarProvider>
-          <Toaster />
-          <Sonner />
-        </TooltipProvider>
-      </BrowserRouter>
+      <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+        <BrowserRouter>
+          <TooltipProvider>
+            <SidebarProvider>
+              <div className="min-h-screen flex w-full">
+                {session && <AppSidebar />}
+                <main className="flex-1">
+                  {session && <SidebarTrigger className="m-4" />}
+                  <Routes>
+                    <Route
+                      path="/"
+                      element={
+                        session ? (
+                          <Index session={session} />
+                        ) : (
+                          <Navigate to="/auth" replace />
+                        )
+                      }
+                    />
+                    <Route
+                      path="/auth"
+                      element={
+                        !session ? <Auth /> : <Navigate to="/" replace />
+                      }
+                    />
+                    <Route
+                      path="/profile"
+                      element={
+                        session ? (
+                          <Profile session={session} />
+                        ) : (
+                          <Navigate to="/auth" replace />
+                        )
+                      }
+                    />
+                    <Route
+                      path="/favorites"
+                      element={
+                        session ? (
+                          <Favorites session={session} />
+                        ) : (
+                          <Navigate to="/auth" replace />
+                        )
+                      }
+                    />
+                    <Route
+                      path="/settings"
+                      element={
+                        session ? (
+                          <Settings session={session} />
+                        ) : (
+                          <Navigate to="/auth" replace />
+                        )
+                      }
+                    />
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </main>
+              </div>
+            </SidebarProvider>
+            <Toaster />
+            <Sonner />
+          </TooltipProvider>
+        </BrowserRouter>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 };
