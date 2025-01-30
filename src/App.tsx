@@ -5,6 +5,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { AppSidebar } from "@/components/AppSidebar";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
@@ -40,25 +42,33 @@ const App = () => {
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          <Routes>
-            <Route
-              path="/"
-              element={
-                session ? (
-                  <Index session={session} />
-                ) : (
-                  <Navigate to="/auth" replace />
-                )
-              }
-            />
-            <Route
-              path="/auth"
-              element={
-                !session ? <Auth /> : <Navigate to="/" replace />
-              }
-            />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+          <SidebarProvider>
+            <div className="min-h-screen flex w-full">
+              {session && <AppSidebar />}
+              <main className="flex-1">
+                {session && <SidebarTrigger className="m-4" />}
+                <Routes>
+                  <Route
+                    path="/"
+                    element={
+                      session ? (
+                        <Index session={session} />
+                      ) : (
+                        <Navigate to="/auth" replace />
+                      )
+                    }
+                  />
+                  <Route
+                    path="/auth"
+                    element={
+                      !session ? <Auth /> : <Navigate to="/" replace />
+                    }
+                  />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </main>
+            </div>
+          </SidebarProvider>
         </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>

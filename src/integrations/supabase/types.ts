@@ -9,23 +9,174 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      admin_settings: {
+        Row: {
+          created_at: string
+          id: string
+          min_order_amount: number
+          price_multiplier: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          min_order_amount?: number
+          price_multiplier?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          min_order_amount?: number
+          price_multiplier?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      construction_estimates: {
+        Row: {
+          area: number
+          conversation_id: string | null
+          created_at: string
+          estimated_cost: number
+          id: string
+          location: string
+          status: string
+          updated_at: string
+          urgency: string
+          user_id: string | null
+          work_type: string
+        }
+        Insert: {
+          area: number
+          conversation_id?: string | null
+          created_at?: string
+          estimated_cost: number
+          id?: string
+          location: string
+          status?: string
+          updated_at?: string
+          urgency: string
+          user_id?: string | null
+          work_type: string
+        }
+        Update: {
+          area?: number
+          conversation_id?: string | null
+          created_at?: string
+          estimated_cost?: number
+          id?: string
+          location?: string
+          status?: string
+          updated_at?: string
+          urgency?: string
+          user_id?: string | null
+          work_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "construction_estimates_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "construction_estimates_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      conversations: {
+        Row: {
+          created_at: string
+          id: string
+          status: string
+          title: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          status?: string
+          title: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      messages: {
+        Row: {
+          content: string
+          conversation_id: string | null
+          created_at: string
+          id: string
+          role: string
+        }
+        Insert: {
+          content: string
+          conversation_id?: string | null
+          created_at?: string
+          id?: string
+          role: string
+        }
+        Update: {
+          content?: string
+          conversation_id?: string | null
+          created_at?: string
+          id?: string
+          role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
           created_at: string
           id: string
+          role: Database["public"]["Enums"]["user_role"]
           username: string | null
         }
         Insert: {
           avatar_url?: string | null
           created_at?: string
           id: string
+          role?: Database["public"]["Enums"]["user_role"]
           username?: string | null
         }
         Update: {
           avatar_url?: string | null
           created_at?: string
           id?: string
+          role?: Database["public"]["Enums"]["user_role"]
           username?: string | null
         }
         Relationships: []
@@ -79,7 +230,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      user_role: "admin" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
