@@ -16,6 +16,14 @@ const Auth = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  const validateEmail = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return "Пожалуйста, введите корректный email";
+    }
+    return null;
+  };
+
   const validatePassword = (password: string) => {
     if (password.length < 6) {
       return "Пароль должен содержать минимум 6 символов";
@@ -27,12 +35,17 @@ const Auth = () => {
     e.preventDefault();
     setError("");
 
-    if (!isLogin) {
-      const passwordError = validatePassword(password);
-      if (passwordError) {
-        setError(passwordError);
-        return;
-      }
+    // Validate inputs
+    const emailError = validateEmail(email);
+    if (emailError) {
+      setError(emailError);
+      return;
+    }
+
+    const passwordError = validatePassword(password);
+    if (passwordError) {
+      setError(passwordError);
+      return;
     }
 
     setLoading(true);
@@ -47,7 +60,7 @@ const Auth = () => {
           if (error.message === "Invalid login credentials") {
             setError("Неверный email или пароль");
           } else {
-            setError(error.message);
+            setError("Ошибка при входе. Пожалуйста, проверьте ваши данные");
           }
           return;
         }
@@ -63,7 +76,7 @@ const Auth = () => {
           } else if (error.message === "Password should be at least 6 characters") {
             setError("Пароль должен содержать минимум 6 символов");
           } else {
-            setError(error.message);
+            setError("Ошибка при регистрации. Пожалуйста, попробуйте позже");
           }
           return;
         }
@@ -73,7 +86,7 @@ const Auth = () => {
         });
       }
     } catch (error: any) {
-      setError("Произошла ошибка при авторизации");
+      setError("Произошла ошибка при авторизации. Пожалуйста, попробуйте позже");
     } finally {
       setLoading(false);
     }
