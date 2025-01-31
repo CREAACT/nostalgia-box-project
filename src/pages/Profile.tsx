@@ -38,6 +38,19 @@ const Profile = ({ session }: { session: any }) => {
     },
   });
 
+  const { data: capsules } = useQuery({
+    queryKey: ["capsules"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("time_capsules")
+        .select("*")
+        .eq("user_id", session.user.id);
+
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
   useEffect(() => {
     if (profile) {
       setUsername(profile.username || "");
