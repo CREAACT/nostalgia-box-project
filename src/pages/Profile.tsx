@@ -134,9 +134,10 @@ const Profile = ({ session }: { session: any }) => {
     });
   };
 
-  const personalCapsules = capsules?.filter(c => !c.is_shared && !c.is_group) || [];
-  const sharedCapsules = capsules?.filter(c => c.is_shared) || [];
-  const groupCapsules = capsules?.filter(c => c.is_group) || [];
+  // For now, we'll categorize all capsules as personal since we don't have the shared/group fields yet
+  const personalCapsules = capsules || [];
+  const sharedCapsules: any[] = [];
+  const groupCapsules: any[] = [];
 
   const handleCapsuleClick = (capsule: any) => {
     setSelectedCapsule(capsule);

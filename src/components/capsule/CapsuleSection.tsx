@@ -18,6 +18,7 @@ export const CapsuleSection = ({ title, capsules, onCapsuleClick }: CapsuleSecti
             <CapsuleBottle
               key={capsule.id}
               title={capsule.title}
+              openDate={capsule.open_date}
               onClick={() => onCapsuleClick(capsule)}
             />
           ))}
