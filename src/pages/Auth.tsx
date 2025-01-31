@@ -43,29 +43,37 @@ const Auth = () => {
           email,
           password,
         });
-        if (error) throw error;
+        if (error) {
+          if (error.message === "Invalid login credentials") {
+            setError("Неверный email или пароль");
+          } else {
+            setError(error.message);
+          }
+          return;
+        }
         navigate("/");
       } else {
         const { error } = await supabase.auth.signUp({
           email,
           password,
         });
-        if (error) throw error;
+        if (error) {
+          if (error.message === "User already registered") {
+            setError("Пользователь с таким email уже зарегистрирован");
+          } else if (error.message === "Password should be at least 6 characters") {
+            setError("Пароль должен содержать минимум 6 символов");
+          } else {
+            setError(error.message);
+          }
+          return;
+        }
         toast({
           title: "Регистрация успешна!",
           description: "Пожалуйста, проверьте вашу почту для подтверждения.",
         });
       }
     } catch (error: any) {
-      if (error.message === "Password should be at least 6 characters") {
-        setError("Пароль должен содержать минимум 6 символов");
-      } else {
-        toast({
-          variant: "destructive",
-          title: "Ошибка!",
-          description: error.message,
-        });
-      }
+      setError("Произошла ошибка при авторизации");
     } finally {
       setLoading(false);
     }
