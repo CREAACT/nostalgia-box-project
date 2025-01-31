@@ -139,6 +139,7 @@ export type Database = {
           bio: string | null
           birth_date: string | null
           created_at: string
+          custom_id: string | null
           first_name: string | null
           friends: string[] | null
           id: string
@@ -154,6 +155,7 @@ export type Database = {
           bio?: string | null
           birth_date?: string | null
           created_at?: string
+          custom_id?: string | null
           first_name?: string | null
           friends?: string[] | null
           id: string
@@ -169,6 +171,7 @@ export type Database = {
           bio?: string | null
           birth_date?: string | null
           created_at?: string
+          custom_id?: string | null
           first_name?: string | null
           friends?: string[] | null
           id?: string

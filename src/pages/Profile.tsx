@@ -18,6 +18,7 @@ import { TimeCapsule } from "@/components/TimeCapsule";
 
 const Profile = ({ session }: { session: any }) => {
   const [username, setUsername] = useState("");
+  const [customId, setCustomId] = useState("");
   const [uploading, setUploading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [selectedCapsule, setSelectedCapsule] = useState<any>(null);
@@ -37,19 +38,12 @@ const Profile = ({ session }: { session: any }) => {
     },
   });
 
-  const { data: capsules } = useQuery({
-    queryKey: ["user-capsules"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("time_capsules")
-        .select("*")
-        .eq("user_id", session.user.id)
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-      return data;
-    },
-  });
+  useEffect(() => {
+    if (profile) {
+      setUsername(profile.username || "");
+      setCustomId(profile.custom_id || "");
+    }
+  }, [profile]);
 
   const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     try {
@@ -103,9 +97,28 @@ const Profile = ({ session }: { session: any }) => {
 
   const handleUpdateProfile = async () => {
     try {
+      if (customId) {
+        // Check if custom ID is already taken
+        const { data: existingUser } = await supabase
+          .from("profiles")
+          .select("id")
+          .eq("custom_id", customId)
+          .neq("id", session.user.id)
+          .single();
+
+        if (existingUser) {
+          toast({
+            variant: "destructive",
+            title: "Ошибка",
+            description: "Этот ID уже занят. Пожалуйста, выберите другой.",
+          });
+          return;
+        }
+      }
+
       const { error } = await supabase
         .from("profiles")
-        .update({ username })
+        .update({ username, custom_id: customId })
         .eq("id", session.user.id);
 
       if (error) throw error;
@@ -134,7 +147,6 @@ const Profile = ({ session }: { session: any }) => {
     });
   };
 
-  // For now, we'll categorize all capsules as personal since we don't have the shared/group fields yet
   const personalCapsules = capsules || [];
   const sharedCapsules: any[] = [];
   const groupCapsules: any[] = [];
@@ -206,23 +218,20 @@ const Profile = ({ session }: { session: any }) => {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="user-id">ID пользователя</Label>
-            <div className="flex gap-2">
-              <Input
-                id="user-id"
-                value={session.user.id}
-                disabled
-                className="bg-muted font-mono text-sm"
-              />
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={copyUserId}
-                className="shrink-0"
-              >
-                <Copy className="h-4 w-4" />
-              </Button>
-            </div>
+            <Label htmlFor="custom-id">Пользовательский ID</Label>
+            <Input
+              id="custom-id"
+              value={customId}
+              onChange={(e) => setCustomId(e.target.value)}
+              disabled={!isEditing}
+              className={!isEditing ? "bg-muted" : ""}
+              placeholder="Введите уникальный ID"
+            />
+            {isEditing && (
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Этот ID будет использоваться для поиска вашего профиля
+              </p>
+            )}
           </div>
 
           <div className="flex justify-end gap-2">

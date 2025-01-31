@@ -9,7 +9,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { LogOut, Settings, Star, User, List } from "lucide-react";
+import { LogOut, Settings, Star, User, List, History } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "./ui/use-toast";
@@ -50,6 +50,11 @@ export function AppSidebar() {
       title: "Избранные капсулы",
       icon: Star,
       onClick: () => navigate("/favorites"),
+    },
+    {
+      title: "Хроники",
+      icon: History,
+      onClick: () => navigate("/chronicles"),
     },
     {
       title: "Настройки",

@@ -15,6 +15,7 @@ import NotFound from "./pages/NotFound";
 import Profile from "./pages/Profile";
 import Favorites from "./pages/Favorites";
 import Settings from "./pages/Settings";
+import Chronicles from "./pages/Chronicles";
 
 const queryClient = new QueryClient();
 
@@ -115,6 +116,16 @@ const App = () => {
                       element={
                         session ? (
                           <Settings session={session} />
+                        ) : (
+                          <Navigate to="/auth" replace />
+                        )
+                      }
+                    />
+                    <Route
+                      path="/chronicles"
+                      element={
+                        session ? (
+                          <Chronicles />
                         ) : (
                           <Navigate to="/auth" replace />
                         )
