@@ -35,14 +35,18 @@ const Auth = () => {
     e.preventDefault();
     setError("");
 
+    // Trim whitespace from inputs
+    const trimmedEmail = email.trim();
+    const trimmedPassword = password.trim();
+
     // Validate inputs
-    const emailError = validateEmail(email);
+    const emailError = validateEmail(trimmedEmail);
     if (emailError) {
       setError(emailError);
       return;
     }
 
-    const passwordError = validatePassword(password);
+    const passwordError = validatePassword(trimmedPassword);
     if (passwordError) {
       setError(passwordError);
       return;
@@ -53,12 +57,14 @@ const Auth = () => {
     try {
       if (isLogin) {
         const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
+          email: trimmedEmail,
+          password: trimmedPassword,
         });
         if (error) {
           if (error.message === "Invalid login credentials") {
-            setError("Неверный email или пароль");
+            setError("Неверный email или пароль. Пожалуйста, проверьте введенные данные");
+          } else if (error.message.includes("Email not confirmed")) {
+            setError("Пожалуйста, подтвердите ваш email перед входом");
           } else {
             setError("Ошибка при входе. Пожалуйста, проверьте ваши данные");
           }
@@ -67,8 +73,8 @@ const Auth = () => {
         navigate("/");
       } else {
         const { error } = await supabase.auth.signUp({
-          email,
-          password,
+          email: trimmedEmail,
+          password: trimmedPassword,
         });
         if (error) {
           if (error.message === "User already registered") {
