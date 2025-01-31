@@ -6,13 +6,21 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { CapsuleList } from "@/components/CapsuleList";
 import { Copy } from "lucide-react";
+import { CapsuleSection } from "@/components/capsule/CapsuleSection";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { TimeCapsule } from "@/components/TimeCapsule";
 
 const Profile = ({ session }: { session: any }) => {
   const [username, setUsername] = useState("");
   const [uploading, setUploading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [selectedCapsule, setSelectedCapsule] = useState<any>(null);
   const { toast } = useToast();
 
   const { data: profile, refetch } = useQuery({
@@ -42,12 +50,6 @@ const Profile = ({ session }: { session: any }) => {
       return data;
     },
   });
-
-  useEffect(() => {
-    if (profile?.username) {
-      setUsername(profile.username);
-    }
-  }, [profile]);
 
   const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     try {
@@ -132,16 +134,24 @@ const Profile = ({ session }: { session: any }) => {
     });
   };
 
+  const personalCapsules = capsules?.filter(c => !c.is_shared && !c.is_group) || [];
+  const sharedCapsules = capsules?.filter(c => c.is_shared) || [];
+  const groupCapsules = capsules?.filter(c => c.is_group) || [];
+
+  const handleCapsuleClick = (capsule: any) => {
+    setSelectedCapsule(capsule);
+  };
+
   return (
-    <div className="p-4 md:p-8 max-w-4xl mx-auto space-y-8">
+    <div className="p-4 md:p-8 max-w-6xl mx-auto space-y-8">
       <div className="text-center space-y-4">
-        <h1 className="text-4xl font-bold">Профиль</h1>
-        <p className="text-lg text-muted-foreground">
-          Управляйте своими данными
+        <h1 className="text-4xl font-bold text-gray-900 dark:text-gray-100">Профиль</h1>
+        <p className="text-lg text-gray-600 dark:text-gray-400">
+          Управляйте своими данными и капсулами времени
         </p>
       </div>
 
-      <div className="bg-card rounded-lg p-6 space-y-6 shadow-md">
+      <div className="bg-white dark:bg-gray-800 rounded-lg p-6 space-y-6 shadow-md">
         <div className="flex flex-col items-center gap-4">
           <Avatar className="w-32 h-32">
             <AvatarImage src={profile?.avatar_url} />
@@ -233,20 +243,40 @@ const Profile = ({ session }: { session: any }) => {
         </div>
       </div>
 
-      <div className="space-y-4">
-        <h2 className="text-2xl font-semibold">Мои капсулы времени</h2>
-        {capsules && capsules.length > 0 ? (
-          <CapsuleList
-            capsules={capsules}
-            session={session}
-            isLoading={false}
-          />
-        ) : (
-          <div className="text-center py-8 text-muted-foreground">
-            У вас пока нет капсул времени
-          </div>
-        )}
+      <div className="space-y-8">
+        <CapsuleSection
+          title="Мои личные капсулы"
+          capsules={personalCapsules}
+          onCapsuleClick={handleCapsuleClick}
+        />
+        
+        <CapsuleSection
+          title="Совместные капсулы"
+          capsules={sharedCapsules}
+          onCapsuleClick={handleCapsuleClick}
+        />
+        
+        <CapsuleSection
+          title="Групповые капсулы"
+          capsules={groupCapsules}
+          onCapsuleClick={handleCapsuleClick}
+        />
       </div>
+
+      <Dialog open={!!selectedCapsule} onOpenChange={() => setSelectedCapsule(null)}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Капсула времени</DialogTitle>
+          </DialogHeader>
+          {selectedCapsule && (
+            <TimeCapsule
+              initialData={selectedCapsule}
+              session={session}
+              onComplete={() => setSelectedCapsule(null)}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
