@@ -9,30 +9,6 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      admin_settings: {
-        Row: {
-          created_at: string
-          id: string
-          min_order_amount: number
-          price_multiplier: number
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          min_order_amount?: number
-          price_multiplier?: number
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          min_order_amount?: number
-          price_multiplier?: number
-          updated_at?: string
-        }
-        Relationships: []
-      }
       construction_estimates: {
         Row: {
           area: number
@@ -160,23 +136,47 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          bio: string | null
+          birth_date: string | null
           created_at: string
+          first_name: string | null
+          friends: string[] | null
           id: string
+          is_public: boolean | null
+          last_name: string | null
+          notifications_enabled: boolean | null
           role: Database["public"]["Enums"]["user_role"]
+          status: string | null
           username: string | null
         }
         Insert: {
           avatar_url?: string | null
+          bio?: string | null
+          birth_date?: string | null
           created_at?: string
+          first_name?: string | null
+          friends?: string[] | null
           id: string
+          is_public?: boolean | null
+          last_name?: string | null
+          notifications_enabled?: boolean | null
           role?: Database["public"]["Enums"]["user_role"]
+          status?: string | null
           username?: string | null
         }
         Update: {
           avatar_url?: string | null
+          bio?: string | null
+          birth_date?: string | null
           created_at?: string
+          first_name?: string | null
+          friends?: string[] | null
           id?: string
+          is_public?: boolean | null
+          last_name?: string | null
+          notifications_enabled?: boolean | null
           role?: Database["public"]["Enums"]["user_role"]
+          status?: string | null
           username?: string | null
         }
         Relationships: []
