@@ -111,13 +111,13 @@ const Profile = ({ session }: { session: any }) => {
   const handleUpdateProfile = async () => {
     try {
       if (customId) {
-        // Check if custom ID is already taken
+        // Check if custom ID is already taken using maybeSingle() instead of single()
         const { data: existingUser } = await supabase
           .from("profiles")
           .select("id")
           .eq("custom_id", customId)
           .neq("id", session.user.id)
-          .single();
+          .maybeSingle();
 
         if (existingUser) {
           toast({
