@@ -13,6 +13,15 @@ const Chronicles = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
+  const { data: currentUser } = useQuery({
+    queryKey: ["current-user"],
+    queryFn: async () => {
+      const { data: { user }, error } = await supabase.auth.getUser();
+      if (error) throw error;
+      return user;
+    },
+  });
+
   const { data: searchResults, refetch } = useQuery({
     queryKey: ["search-users", searchId],
     queryFn: async () => {
@@ -33,14 +42,17 @@ const Chronicles = () => {
   const { data: friendships } = useQuery({
     queryKey: ["friendships"],
     queryFn: async () => {
+      if (!currentUser) return [];
+      
       const { data, error } = await supabase
         .from("friendships")
         .select("*")
-        .or(`user_id.eq.${supabase.auth.getUser()?.data.user?.id},friend_id.eq.${supabase.auth.getUser()?.data.user?.id}`);
+        .or(`user_id.eq.${currentUser.id},friend_id.eq.${currentUser.id}`);
 
       if (error) throw error;
       return data;
     },
+    enabled: !!currentUser,
   });
 
   const handleSearch = () => {
@@ -56,9 +68,18 @@ const Chronicles = () => {
   };
 
   const handleAddFriend = async (userId: string) => {
+    if (!currentUser) {
+      toast({
+        variant: "destructive",
+        title: "Ошибка",
+        description: "Необходимо войти в систему",
+      });
+      return;
+    }
+
     const existingFriendship = friendships?.find(
-      f => (f.user_id === userId && f.friend_id === supabase.auth.getUser()?.data.user?.id) ||
-           (f.friend_id === userId && f.user_id === supabase.auth.getUser()?.data.user?.id)
+      f => (f.user_id === userId && f.friend_id === currentUser.id) ||
+           (f.friend_id === userId && f.user_id === currentUser.id)
     );
 
     if (existingFriendship) {
@@ -73,7 +94,7 @@ const Chronicles = () => {
     const { error } = await supabase
       .from("friendships")
       .insert({
-        user_id: supabase.auth.getUser()?.data.user?.id,
+        user_id: currentUser.id,
         friend_id: userId,
       });
 
@@ -93,10 +114,19 @@ const Chronicles = () => {
   };
 
   const handleMessage = async (userId: string) => {
+    if (!currentUser) {
+      toast({
+        variant: "destructive",
+        title: "Ошибка",
+        description: "Необходимо войти в систему",
+      });
+      return;
+    }
+
     const { data: existingMessages, error: fetchError } = await supabase
       .from("direct_messages")
       .select("*")
-      .or(`and(sender_id.eq.${supabase.auth.getUser()?.data.user?.id},receiver_id.eq.${userId}),and(sender_id.eq.${userId},receiver_id.eq.${supabase.auth.getUser()?.data.user?.id})`)
+      .or(`and(sender_id.eq.${currentUser.id},receiver_id.eq.${userId}),and(sender_id.eq.${userId},receiver_id.eq.${currentUser.id})`)
       .limit(1);
 
     if (fetchError) {
@@ -112,7 +142,7 @@ const Chronicles = () => {
       const { error: insertError } = await supabase
         .from("direct_messages")
         .insert({
-          sender_id: supabase.auth.getUser()?.data.user?.id,
+          sender_id: currentUser.id,
           receiver_id: userId,
           content: "Привет! 👋",
         });
