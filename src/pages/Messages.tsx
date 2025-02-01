@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -12,48 +12,85 @@ const Messages = () => {
   const [message, setMessage] = useState("");
   const { toast } = useToast();
 
-  const { data: conversations } = useQuery({
+  const { data: currentUser } = useQuery({
+    queryKey: ["current-user"],
+    queryFn: async () => {
+      const { data: { user }, error } = await supabase.auth.getUser();
+      if (error) throw error;
+      return user;
+    },
+  });
+
+  const { data: conversations, refetch: refetchConversations } = useQuery({
     queryKey: ["conversations"],
     queryFn: async () => {
+      if (!currentUser) return [];
+      
       const { data: messages, error } = await supabase
         .from("direct_messages")
         .select(`
           *,
-          sender:sender_id(id, username, avatar_url),
-          receiver:receiver_id(id, username, avatar_url)
+          sender:profiles!direct_messages_sender_id_fkey(id, username, avatar_url),
+          receiver:profiles!direct_messages_receiver_id_fkey(id, username, avatar_url)
         `)
-        .or(`sender_id.eq.${supabase.auth.getUser()?.data.user?.id},receiver_id.eq.${supabase.auth.getUser()?.data.user?.id}`)
+        .or(`sender_id.eq.${currentUser.id},receiver_id.eq.${currentUser.id}`)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
       return messages;
     },
+    enabled: !!currentUser,
   });
 
   const { data: messages, refetch: refetchMessages } = useQuery({
     queryKey: ["messages", selectedUser?.id],
     queryFn: async () => {
-      if (!selectedUser) return [];
+      if (!currentUser || !selectedUser) return [];
       
       const { data, error } = await supabase
         .from("direct_messages")
         .select("*")
-        .or(`and(sender_id.eq.${supabase.auth.getUser()?.data.user?.id},receiver_id.eq.${selectedUser.id}),and(sender_id.eq.${selectedUser.id},receiver_id.eq.${supabase.auth.getUser()?.data.user?.id})`)
+        .or(`and(sender_id.eq.${currentUser.id},receiver_id.eq.${selectedUser.id}),and(sender_id.eq.${selectedUser.id},receiver_id.eq.${currentUser.id})`)
         .order("created_at", { ascending: true });
 
       if (error) throw error;
       return data;
     },
-    enabled: !!selectedUser,
+    enabled: !!currentUser && !!selectedUser,
   });
 
+  useEffect(() => {
+    if (!currentUser) return;
+
+    const channel = supabase
+      .channel('messages')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'direct_messages',
+          filter: `sender_id=eq.${currentUser.id},receiver_id=eq.${selectedUser?.id}`
+        },
+        () => {
+          refetchMessages();
+          refetchConversations();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [currentUser, selectedUser, refetchMessages, refetchConversations]);
+
   const sendMessage = async () => {
-    if (!message.trim() || !selectedUser) return;
+    if (!message.trim() || !selectedUser || !currentUser) return;
 
     const { error } = await supabase
       .from("direct_messages")
       .insert({
-        sender_id: supabase.auth.getUser()?.data.user?.id,
+        sender_id: currentUser.id,
         receiver_id: selectedUser.id,
         content: message.trim(),
       });
@@ -69,6 +106,7 @@ const Messages = () => {
 
     setMessage("");
     refetchMessages();
+    refetchConversations();
   };
 
   return (
@@ -79,7 +117,7 @@ const Messages = () => {
           <h2 className="text-xl font-semibold mb-4">Диалоги</h2>
           <ScrollArea className="h-[600px]">
             {conversations?.map((conv: any) => {
-              const otherUser = conv.sender.id === supabase.auth.getUser()?.data.user?.id ? conv.receiver : conv.sender;
+              const otherUser = conv.sender.id === currentUser?.id ? conv.receiver : conv.sender;
               return (
                 <div
                   key={conv.id}
@@ -125,14 +163,14 @@ const Messages = () => {
                     <div
                       key={msg.id}
                       className={`flex ${
-                        msg.sender_id === supabase.auth.getUser()?.data.user?.id
+                        msg.sender_id === currentUser?.id
                           ? "justify-end"
                           : "justify-start"
                       }`}
                     >
                       <div
                         className={`max-w-[70%] p-3 rounded-lg ${
-                          msg.sender_id === supabase.auth.getUser()?.data.user?.id
+                          msg.sender_id === currentUser?.id
                             ? "bg-primary text-primary-foreground"
                             : "bg-accent"
                         }`}

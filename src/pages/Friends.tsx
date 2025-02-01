@@ -9,21 +9,33 @@ import { format } from "date-fns";
 const Friends = () => {
   const { toast } = useToast();
 
+  const { data: currentUser } = useQuery({
+    queryKey: ["current-user"],
+    queryFn: async () => {
+      const { data: { user }, error } = await supabase.auth.getUser();
+      if (error) throw error;
+      return user;
+    },
+  });
+
   const { data: friendships, refetch: refetchFriendships } = useQuery({
     queryKey: ["friendships"],
     queryFn: async () => {
+      if (!currentUser) return [];
+      
       const { data, error } = await supabase
         .from("friendships")
         .select(`
           *,
-          friend:friend_id(id, username, avatar_url),
-          user:user_id(id, username, avatar_url)
+          friend:profiles!friendships_friend_id_fkey(id, username, avatar_url),
+          user:profiles!friendships_user_id_fkey(id, username, avatar_url)
         `)
-        .or(`user_id.eq.${supabase.auth.getUser()?.data.user?.id},friend_id.eq.${supabase.auth.getUser()?.data.user?.id}`);
+        .or(`user_id.eq.${currentUser.id},friend_id.eq.${currentUser.id}`);
 
       if (error) throw error;
       return data;
     },
+    enabled: !!currentUser,
   });
 
   const handleFriendshipAction = async (friendshipId: string, status: 'accepted' | 'rejected') => {
@@ -50,7 +62,7 @@ const Friends = () => {
   };
 
   const pendingRequests = friendships?.filter(
-    (f) => f.status === "pending" && f.friend_id === supabase.auth.getUser()?.data.user?.id
+    (f) => f.status === "pending" && f.friend_id === currentUser?.id
   ) || [];
 
   const friends = friendships?.filter(
@@ -73,7 +85,7 @@ const Friends = () => {
 
         <TabsContent value="friends" className="space-y-4">
           {friends.map((friendship) => {
-            const friend = friendship.user_id === supabase.auth.getUser()?.data.user?.id
+            const friend = friendship.user_id === currentUser?.id
               ? friendship.friend
               : friendship.user;
             
@@ -84,13 +96,13 @@ const Friends = () => {
               >
                 <div className="flex items-center gap-3">
                   <Avatar>
-                    <AvatarImage src={friend.avatar_url} />
+                    <AvatarImage src={friend?.avatar_url} />
                     <AvatarFallback>
-                      {friend.username?.charAt(0)?.toUpperCase() || "U"}
+                      {friend?.username?.charAt(0)?.toUpperCase() || "U"}
                     </AvatarFallback>
                   </Avatar>
                   <div>
-                    <p className="font-medium">{friend.username}</p>
+                    <p className="font-medium">{friend?.username}</p>
                     <p className="text-sm text-gray-500">
                       Друзья с {format(new Date(friendship.created_at), "dd.MM.yyyy")}
                     </p>
@@ -115,13 +127,13 @@ const Friends = () => {
             >
               <div className="flex items-center gap-3">
                 <Avatar>
-                  <AvatarImage src={request.user.avatar_url} />
+                  <AvatarImage src={request.user?.avatar_url} />
                   <AvatarFallback>
-                    {request.user.username?.charAt(0)?.toUpperCase() || "U"}
+                    {request.user?.username?.charAt(0)?.toUpperCase() || "U"}
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <p className="font-medium">{request.user.username}</p>
+                  <p className="font-medium">{request.user?.username}</p>
                   <p className="text-sm text-gray-500">
                     Отправлено {format(new Date(request.created_at), "dd.MM.yyyy")}
                   </p>
