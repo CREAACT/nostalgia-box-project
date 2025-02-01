@@ -72,6 +72,27 @@ const Messages = () => {
     queryFn: async () => {
       if (!currentUser || !selectedUser) return [];
       
+      // Check friendship status
+      const { data: friendship, error: friendshipError } = await supabase
+        .from("friendships")
+        .select("*")
+        .or(`and(user_id.eq.${currentUser.id},friend_id.eq.${selectedUser.id}),and(user_id.eq.${selectedUser.id},friend_id.eq.${currentUser.id})`)
+        .maybeSingle();
+
+      if (friendshipError) {
+        console.error("Error checking friendship:", friendshipError);
+        return [];
+      }
+
+      if (!friendship || friendship.status !== 'accepted') {
+        toast({
+          variant: "destructive",
+          title: "Ошибка",
+          description: "Вы не можете отправлять сообщения этому пользователю, так как вы не являетесь друзьями",
+        });
+        return [];
+      }
+
       const { data, error } = await supabase
         .from("direct_messages")
         .select("*")
@@ -394,6 +415,7 @@ const Messages = () => {
       </div>
     </div>
   );
+
 };
 
 export default Messages;
