@@ -77,10 +77,15 @@ const Chronicles = () => {
       return;
     }
 
-    const existingFriendship = friendships?.find(
-      f => (f.user_id === userId && f.friend_id === currentUser.id) ||
-           (f.friend_id === userId && f.user_id === currentUser.id)
-    );
+    // Check if friendship already exists
+    const { data: existingFriendship } = await supabase
+      .from("friendships")
+      .select("*")
+      .or(
+        `and(user_id.eq.${currentUser.id},friend_id.eq.${userId}),` +
+        `and(user_id.eq.${userId},friend_id.eq.${currentUser.id})`
+      )
+      .single();
 
     if (existingFriendship) {
       toast({
@@ -96,6 +101,7 @@ const Chronicles = () => {
       .insert({
         user_id: currentUser.id,
         friend_id: userId,
+        status: 'pending'
       });
 
     if (error) {
