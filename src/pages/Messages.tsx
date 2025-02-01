@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -7,19 +7,21 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/components/ui/use-toast";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, Search, User } from "lucide-react";
+import { ChevronLeft, Mic, Search, Square, User } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useNavigate } from "react-router-dom";
 
 const Messages = () => {
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [message, setMessage] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
-  const [showUserProfile, setShowUserProfile] = useState(false);
+  const [showChat, setShowChat] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<BlobPart[]>([]);
   const { toast } = useToast();
   const isMobile = useIsMobile();
-  const [showChat, setShowChat] = useState(!isMobile);
   const navigate = useNavigate();
 
   const { data: currentUser } = useQuery({
@@ -122,15 +124,79 @@ const Messages = () => {
     };
   }, [currentUser, selectedUser, refetchMessages, refetchConversations]);
 
-  const sendMessage = async () => {
-    if (!message.trim() || !selectedUser || !currentUser) return;
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      chunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (e) => {
+        chunksRef.current.push(e.data);
+      };
+
+      mediaRecorder.onstop = async () => {
+        const audioBlob = new Blob(chunksRef.current, { type: 'audio/webm' });
+        setAudioBlob(audioBlob);
+        await handleSendVoiceMessage(audioBlob);
+      };
+
+      mediaRecorder.start();
+      setIsRecording(true);
+    } catch (error) {
+      console.error('Error accessing microphone:', error);
+      toast({
+        variant: "destructive",
+        title: "Ошибка",
+        description: "Не удалось получить доступ к микрофону",
+      });
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+      // Stop all audio tracks
+      mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
+    }
+  };
+
+  const handleSendVoiceMessage = async (blob: Blob) => {
+    try {
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('voice-messages')
+        .upload(`${Date.now()}-voice-message.webm`, blob);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('voice-messages')
+        .getPublicUrl(uploadData.path);
+
+      await sendMessage(publicUrl, 'voice');
+    } catch (error) {
+      console.error('Error sending voice message:', error);
+      toast({
+        variant: "destructive",
+        title: "Ошибка",
+        description: "Не удалось отправить голосовое сообщение",
+      });
+    }
+  };
+
+  const sendMessage = async (content: string, type: 'text' | 'voice' = 'text') => {
+    if ((!message.trim() && type === 'text') || !selectedUser || !currentUser) return;
+
+    const messageContent = type === 'text' ? message.trim() : content;
 
     const { error } = await supabase
       .from("direct_messages")
       .insert({
         sender_id: currentUser.id,
         receiver_id: selectedUser.id,
-        content: message.trim(),
+        content: messageContent,
+        type: type,
       });
 
     if (error) {
@@ -240,13 +306,13 @@ const Messages = () => {
                       <ChevronLeft className="h-5 w-5" />
                     </Button>
                   )}
-                  <Avatar>
+                  <Avatar className="cursor-pointer" onClick={handleViewProfile}>
                     <AvatarImage src={selectedUser.avatar_url} />
                     <AvatarFallback>
                       {selectedUser.username?.charAt(0)?.toUpperCase() || "U"}
                     </AvatarFallback>
                   </Avatar>
-                  <div className="flex-1">
+                  <div className="flex-1 cursor-pointer" onClick={handleViewProfile}>
                     <h2 className="text-lg font-semibold">
                       {`${selectedUser.first_name || ''} ${selectedUser.last_name || ''}`.trim() || selectedUser.username}
                     </h2>
@@ -278,7 +344,11 @@ const Messages = () => {
                               : "bg-accent"
                           }`}
                         >
-                          <p className="break-words">{msg.content}</p>
+                          {msg.type === 'voice' ? (
+                            <audio controls src={msg.content} className="max-w-full" />
+                          ) : (
+                            <p className="break-words">{msg.content}</p>
+                          )}
                           <div className="flex justify-between items-center mt-1 text-xs opacity-70">
                             <span>{format(new Date(msg.created_at), "HH:mm")}</span>
                             {msg.sender_id === currentUser?.id && (
@@ -297,10 +367,18 @@ const Messages = () => {
                       value={message}
                       onChange={(e) => setMessage(e.target.value)}
                       placeholder="Введите сообщение..."
-                      onKeyPress={(e) => e.key === "Enter" && sendMessage()}
+                      onKeyPress={(e) => e.key === "Enter" && sendMessage(message)}
                       className="flex-1"
                     />
-                    <Button onClick={sendMessage}>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className={isRecording ? "bg-red-500 text-white" : ""}
+                      onClick={isRecording ? stopRecording : startRecording}
+                    >
+                      {isRecording ? <Square className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
+                    </Button>
+                    <Button onClick={() => sendMessage(message)}>
                       Отправить
                     </Button>
                   </div>
