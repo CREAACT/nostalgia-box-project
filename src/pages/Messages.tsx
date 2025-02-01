@@ -7,15 +7,20 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/components/ui/use-toast";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, Search, User } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { useNavigate } from "react-router-dom";
 
 const Messages = () => {
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [message, setMessage] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showUserProfile, setShowUserProfile] = useState(false);
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const [showChat, setShowChat] = useState(!isMobile);
+  const navigate = useNavigate();
 
   const { data: currentUser } = useQuery({
     queryKey: ["current-user"],
@@ -31,7 +36,6 @@ const Messages = () => {
     queryFn: async () => {
       if (!currentUser) return [];
       
-      // Get unique conversations by selecting the most recent message for each user pair
       const { data: messages, error } = await supabase
         .from("direct_messages")
         .select(`
@@ -44,7 +48,6 @@ const Messages = () => {
 
       if (error) throw error;
 
-      // Filter unique conversations
       const uniqueConversations = messages.reduce((acc: any[], curr: any) => {
         const otherUser = curr.sender.id === currentUser.id ? curr.receiver : curr.sender;
         const existingConv = acc.find((conv: any) => {
@@ -75,7 +78,6 @@ const Messages = () => {
 
       if (error) throw error;
 
-      // Mark messages as read
       const unreadMessages = data.filter(
         (msg) => msg.receiver_id === currentUser.id && !msg.read_at
       );
@@ -162,21 +164,44 @@ const Messages = () => {
     return "";
   };
 
+  const filteredConversations = conversations?.filter((conv: any) => {
+    const otherUser = conv.sender.id === currentUser?.id ? conv.receiver : conv.sender;
+    const fullName = `${otherUser.first_name || ''} ${otherUser.last_name || ''}`.trim();
+    return fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+           otherUser.username?.toLowerCase().includes(searchQuery.toLowerCase());
+  });
+
+  const handleViewProfile = () => {
+    if (selectedUser) {
+      navigate(`/profile/${selectedUser.id}`);
+    }
+  };
+
   return (
-    <div className="p-4 md:p-8 max-w-6xl mx-auto">
+    <div className="p-4 md:p-8 max-w-6xl mx-auto h-[calc(100vh-4rem)]">
       <h1 className="text-3xl font-bold mb-6">Сообщения</h1>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 h-[calc(100vh-12rem)]">
         {(!isMobile || !showChat) && (
-          <div className="border rounded-lg p-4">
-            <h2 className="text-xl font-semibold mb-4">Диалоги</h2>
-            <ScrollArea className="h-[600px]">
-              {conversations?.map((conv: any) => {
+          <div className="border rounded-lg p-4 flex flex-col h-full">
+            <div className="mb-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                <Input
+                  className="pl-10"
+                  placeholder="Поиск чатов..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+            </div>
+            <ScrollArea className="flex-1">
+              {filteredConversations?.map((conv: any) => {
                 const otherUser = conv.sender.id === currentUser?.id ? conv.receiver : conv.sender;
                 const fullName = `${otherUser.first_name || ''} ${otherUser.last_name || ''}`.trim() || otherUser.username;
                 return (
                   <div
                     key={conv.id}
-                    className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer hover:bg-accent ${
+                    className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer hover:bg-accent transition-colors ${
                       selectedUser?.id === otherUser.id ? "bg-accent" : ""
                     }`}
                     onClick={() => handleSelectUser(otherUser)}
@@ -187,9 +212,9 @@ const Messages = () => {
                         {otherUser.username?.charAt(0)?.toUpperCase() || "U"}
                       </AvatarFallback>
                     </Avatar>
-                    <div>
-                      <p className="font-medium">{fullName}</p>
-                      <p className="text-sm text-gray-500">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium truncate">{fullName}</p>
+                      <p className="text-sm text-gray-500 truncate">
                         {format(new Date(conv.created_at), "dd.MM.yyyy HH:mm")}
                       </p>
                     </div>
@@ -201,10 +226,10 @@ const Messages = () => {
         )}
         
         {(!isMobile || showChat) && (
-          <div className="md:col-span-2 border rounded-lg p-4">
+          <div className="md:col-span-2 border rounded-lg flex flex-col h-full">
             {selectedUser ? (
               <>
-                <div className="flex items-center gap-3 mb-4 p-3 border-b">
+                <div className="flex items-center gap-3 p-4 border-b bg-accent/50">
                   {isMobile && (
                     <Button
                       variant="ghost"
@@ -221,12 +246,21 @@ const Messages = () => {
                       {selectedUser.username?.charAt(0)?.toUpperCase() || "U"}
                     </AvatarFallback>
                   </Avatar>
-                  <h2 className="text-xl font-semibold">
-                    {`${selectedUser.first_name || ''} ${selectedUser.last_name || ''}`.trim() || selectedUser.username}
-                  </h2>
+                  <div className="flex-1">
+                    <h2 className="text-lg font-semibold">
+                      {`${selectedUser.first_name || ''} ${selectedUser.last_name || ''}`.trim() || selectedUser.username}
+                    </h2>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={handleViewProfile}
+                  >
+                    <User className="h-5 w-5" />
+                  </Button>
                 </div>
                 
-                <ScrollArea className="h-[500px] mb-4">
+                <ScrollArea className="flex-1 p-4">
                   <div className="space-y-4">
                     {messages?.map((msg) => (
                       <div
@@ -244,7 +278,7 @@ const Messages = () => {
                               : "bg-accent"
                           }`}
                         >
-                          <p>{msg.content}</p>
+                          <p className="break-words">{msg.content}</p>
                           <div className="flex justify-between items-center mt-1 text-xs opacity-70">
                             <span>{format(new Date(msg.created_at), "HH:mm")}</span>
                             {msg.sender_id === currentUser?.id && (
@@ -257,19 +291,19 @@ const Messages = () => {
                   </div>
                 </ScrollArea>
                 
-                <div className="flex gap-2">
-                  <Input
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                    placeholder="Введите сообщение..."
-                    onKeyPress={(e) => e.key === "Enter" && sendMessage()}
-                  />
-                  <button
-                    onClick={sendMessage}
-                    className="px-4 py-2 bg-primary text-primary-foreground rounded-lg"
-                  >
-                    Отправить
-                  </button>
+                <div className="p-4 border-t">
+                  <div className="flex gap-2">
+                    <Input
+                      value={message}
+                      onChange={(e) => setMessage(e.target.value)}
+                      placeholder="Введите сообщение..."
+                      onKeyPress={(e) => e.key === "Enter" && sendMessage()}
+                      className="flex-1"
+                    />
+                    <Button onClick={sendMessage}>
+                      Отправить
+                    </Button>
+                  </div>
                 </div>
               </>
             ) : (
