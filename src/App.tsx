@@ -16,8 +16,17 @@ import Profile from "./pages/Profile";
 import Favorites from "./pages/Favorites";
 import Settings from "./pages/Settings";
 import Chronicles from "./pages/Chronicles";
+import Messages from "./pages/Messages";
+import Friends from "./pages/Friends";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      retry: 1,
+    },
+  },
+});
 
 const App = () => {
   const [session, setSession] = useState<any>(null);
@@ -25,7 +34,6 @@ const App = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Get initial session
     supabase.auth.getSession().then(({ data: { session }, error }) => {
       if (error) {
         console.error("Error getting session:", error);
@@ -41,7 +49,6 @@ const App = () => {
       setLoading(false);
     });
 
-    // Set up auth state listener
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -102,6 +109,16 @@ const App = () => {
                       }
                     />
                     <Route
+                      path="/profile/:id"
+                      element={
+                        session ? (
+                          <Profile session={session} />
+                        ) : (
+                          <Navigate to="/auth" replace />
+                        )
+                      }
+                    />
+                    <Route
                       path="/favorites"
                       element={
                         session ? (
@@ -126,6 +143,26 @@ const App = () => {
                       element={
                         session ? (
                           <Chronicles />
+                        ) : (
+                          <Navigate to="/auth" replace />
+                        )
+                      }
+                    />
+                    <Route
+                      path="/messages"
+                      element={
+                        session ? (
+                          <Messages />
+                        ) : (
+                          <Navigate to="/auth" replace />
+                        )
+                      }
+                    />
+                    <Route
+                      path="/friends"
+                      element={
+                        session ? (
+                          <Friends />
                         ) : (
                           <Navigate to="/auth" replace />
                         )
