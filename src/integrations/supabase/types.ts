@@ -220,11 +220,52 @@ export type Database = {
           },
         ]
       }
+      olympiad_participations: {
+        Row: {
+          certificate_url: string | null
+          date: string | null
+          id: string
+          olympiad_name: string
+          position: number | null
+          result: string | null
+          user_id: string | null
+        }
+        Insert: {
+          certificate_url?: string | null
+          date?: string | null
+          id?: string
+          olympiad_name: string
+          position?: number | null
+          result?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          certificate_url?: string | null
+          date?: string | null
+          id?: string
+          olympiad_name?: string
+          position?: number | null
+          result?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "olympiad_participations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
+          achievements: Json[] | null
           avatar_url: string | null
           bio: string | null
           birth_date: string | null
+          certificates: Json[] | null
+          completed_stages: number | null
           created_at: string
           custom_id: string | null
           first_name: string | null
@@ -232,15 +273,23 @@ export type Database = {
           id: string
           is_public: boolean | null
           last_name: string | null
+          medals: Json[] | null
           notifications_enabled: boolean | null
+          rank: string | null
+          rating: number | null
           role: Database["public"]["Enums"]["user_role"]
+          social_links: Json | null
           status: string | null
+          total_olympiads: number | null
           username: string | null
         }
         Insert: {
+          achievements?: Json[] | null
           avatar_url?: string | null
           bio?: string | null
           birth_date?: string | null
+          certificates?: Json[] | null
+          completed_stages?: number | null
           created_at?: string
           custom_id?: string | null
           first_name?: string | null
@@ -248,15 +297,23 @@ export type Database = {
           id: string
           is_public?: boolean | null
           last_name?: string | null
+          medals?: Json[] | null
           notifications_enabled?: boolean | null
+          rank?: string | null
+          rating?: number | null
           role?: Database["public"]["Enums"]["user_role"]
+          social_links?: Json | null
           status?: string | null
+          total_olympiads?: number | null
           username?: string | null
         }
         Update: {
+          achievements?: Json[] | null
           avatar_url?: string | null
           bio?: string | null
           birth_date?: string | null
+          certificates?: Json[] | null
+          completed_stages?: number | null
           created_at?: string
           custom_id?: string | null
           first_name?: string | null
@@ -264,9 +321,14 @@ export type Database = {
           id?: string
           is_public?: boolean | null
           last_name?: string | null
+          medals?: Json[] | null
           notifications_enabled?: boolean | null
+          rank?: string | null
+          rating?: number | null
           role?: Database["public"]["Enums"]["user_role"]
+          social_links?: Json | null
           status?: string | null
+          total_olympiads?: number | null
           username?: string | null
         }
         Relationships: []
