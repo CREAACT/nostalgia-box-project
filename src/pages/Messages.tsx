@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -7,7 +7,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/components/ui/use-toast";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, Mic, Search, Square, User } from "lucide-react";
+import { ChevronLeft, Search, Send, User } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useNavigate } from "react-router-dom";
 
@@ -16,10 +16,6 @@ const Messages = () => {
   const [message, setMessage] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [showChat, setShowChat] = useState(false);
-  const [isRecording, setIsRecording] = useState(false);
-  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const chunksRef = useRef<BlobPart[]>([]);
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const navigate = useNavigate();
@@ -72,7 +68,6 @@ const Messages = () => {
     queryFn: async () => {
       if (!currentUser || !selectedUser) return [];
       
-      // Check friendship status
       const { data: friendship, error: friendshipError } = await supabase
         .from("friendships")
         .select("*")
@@ -145,79 +140,16 @@ const Messages = () => {
     };
   }, [currentUser, selectedUser, refetchMessages, refetchConversations]);
 
-  const startRecording = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
-      mediaRecorderRef.current = mediaRecorder;
-      chunksRef.current = [];
-
-      mediaRecorder.ondataavailable = (e) => {
-        chunksRef.current.push(e.data);
-      };
-
-      mediaRecorder.onstop = async () => {
-        const audioBlob = new Blob(chunksRef.current, { type: 'audio/webm' });
-        setAudioBlob(audioBlob);
-        await handleSendVoiceMessage(audioBlob);
-      };
-
-      mediaRecorder.start();
-      setIsRecording(true);
-    } catch (error) {
-      console.error('Error accessing microphone:', error);
-      toast({
-        variant: "destructive",
-        title: "Ошибка",
-        description: "Не удалось получить доступ к микрофону",
-      });
-    }
-  };
-
-  const stopRecording = () => {
-    if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop();
-      setIsRecording(false);
-      // Stop all audio tracks
-      mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
-    }
-  };
-
-  const handleSendVoiceMessage = async (blob: Blob) => {
-    try {
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('voice-messages')
-        .upload(`${Date.now()}-voice-message.webm`, blob);
-
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('voice-messages')
-        .getPublicUrl(uploadData.path);
-
-      await sendMessage(publicUrl, 'voice');
-    } catch (error) {
-      console.error('Error sending voice message:', error);
-      toast({
-        variant: "destructive",
-        title: "Ошибка",
-        description: "Не удалось отправить голосовое сообщение",
-      });
-    }
-  };
-
-  const sendMessage = async (content: string, type: 'text' | 'voice' = 'text') => {
-    if ((!message.trim() && type === 'text') || !selectedUser || !currentUser) return;
-
-    const messageContent = type === 'text' ? message.trim() : content;
+  const sendMessage = async (content: string) => {
+    if (!message.trim() || !selectedUser || !currentUser) return;
 
     const { error } = await supabase
       .from("direct_messages")
       .insert({
         sender_id: currentUser.id,
         receiver_id: selectedUser.id,
-        content: messageContent,
-        type: type,
+        content: message.trim(),
+        type: 'text',
       });
 
     if (error) {
@@ -267,12 +199,12 @@ const Messages = () => {
   return (
     <div className="p-4 md:p-8 max-w-6xl mx-auto h-[calc(100vh-4rem)]">
       <h1 className="text-3xl font-bold mb-6">Сообщения</h1>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 h-[calc(100vh-12rem)]">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 h-[calc(100vh-12rem)] bg-background rounded-lg shadow-sm">
         {(!isMobile || !showChat) && (
-          <div className="border rounded-lg p-4 flex flex-col h-full">
+          <div className="border-r p-4 flex flex-col h-full">
             <div className="mb-4">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
                 <Input
                   className="pl-10"
                   placeholder="Поиск чатов..."
@@ -282,140 +214,127 @@ const Messages = () => {
               </div>
             </div>
             <ScrollArea className="flex-1">
-              {filteredConversations?.map((conv: any) => {
-                const otherUser = conv.sender.id === currentUser?.id ? conv.receiver : conv.sender;
-                const fullName = `${otherUser.first_name || ''} ${otherUser.last_name || ''}`.trim() || otherUser.username;
-                return (
-                  <div
-                    key={conv.id}
-                    className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer hover:bg-accent transition-colors ${
-                      selectedUser?.id === otherUser.id ? "bg-accent" : ""
-                    }`}
-                    onClick={() => handleSelectUser(otherUser)}
-                  >
-                    <Avatar>
-                      <AvatarImage src={otherUser.avatar_url} />
-                      <AvatarFallback>
-                        {otherUser.username?.charAt(0)?.toUpperCase() || "U"}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium truncate">{fullName}</p>
-                      <p className="text-sm text-gray-500 truncate">
-                        {format(new Date(conv.created_at), "dd.MM.yyyy HH:mm")}
-                      </p>
+              <div className="space-y-2">
+                {filteredConversations?.map((conv: any) => {
+                  const otherUser = conv.sender.id === currentUser?.id ? conv.receiver : conv.sender;
+                  const fullName = `${otherUser.first_name || ''} ${otherUser.last_name || ''}`.trim() || otherUser.username;
+                  return (
+                    <div
+                      key={conv.id}
+                      className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer hover:bg-accent/50 transition-colors ${
+                        selectedUser?.id === otherUser.id ? "bg-accent" : ""
+                      }`}
+                      onClick={() => handleSelectUser(otherUser)}
+                    >
+                      <Avatar className="h-12 w-12">
+                        <AvatarImage src={otherUser.avatar_url} />
+                        <AvatarFallback>
+                          {otherUser.username?.charAt(0)?.toUpperCase() || "U"}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate">{fullName}</p>
+                        <p className="text-sm text-muted-foreground truncate">
+                          {format(new Date(conv.created_at), "dd.MM.yyyy HH:mm")}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </ScrollArea>
           </div>
         )}
         
-        {(!isMobile || showChat) && (
-          <div className="md:col-span-2 border rounded-lg flex flex-col h-full">
-            {selectedUser ? (
-              <>
-                <div className="flex items-center gap-3 p-4 border-b bg-accent/50">
-                  {isMobile && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={handleBack}
-                      className="mr-2"
-                    >
-                      <ChevronLeft className="h-5 w-5" />
-                    </Button>
-                  )}
-                  <Avatar className="cursor-pointer" onClick={handleViewProfile}>
-                    <AvatarImage src={selectedUser.avatar_url} />
-                    <AvatarFallback>
-                      {selectedUser.username?.charAt(0)?.toUpperCase() || "U"}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 cursor-pointer" onClick={handleViewProfile}>
-                    <h2 className="text-lg font-semibold">
-                      {`${selectedUser.first_name || ''} ${selectedUser.last_name || ''}`.trim() || selectedUser.username}
-                    </h2>
-                  </div>
+        <div className="md:col-span-2 flex flex-col h-full">
+          {selectedUser ? (
+            <>
+              <div className="flex items-center gap-3 p-4 border-b bg-accent/50">
+                {isMobile && (
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={handleViewProfile}
+                    onClick={handleBack}
+                    className="mr-2"
                   >
-                    <User className="h-5 w-5" />
+                    <ChevronLeft className="h-5 w-5" />
                   </Button>
+                )}
+                <Avatar className="h-12 w-12 cursor-pointer" onClick={handleViewProfile}>
+                  <AvatarImage src={selectedUser.avatar_url} />
+                  <AvatarFallback>
+                    {selectedUser.username?.charAt(0)?.toUpperCase() || "U"}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1 cursor-pointer" onClick={handleViewProfile}>
+                  <h2 className="text-lg font-semibold">
+                    {`${selectedUser.first_name || ''} ${selectedUser.last_name || ''}`.trim() || selectedUser.username}
+                  </h2>
                 </div>
-                
-                <ScrollArea className="flex-1 p-4">
-                  <div className="space-y-4">
-                    {messages?.map((msg) => (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleViewProfile}
+                >
+                  <User className="h-5 w-5" />
+                </Button>
+              </div>
+              
+              <ScrollArea className="flex-1 p-4">
+                <div className="space-y-4">
+                  {messages?.map((msg) => (
+                    <div
+                      key={msg.id}
+                      className={`flex animate-fade-in ${
+                        msg.sender_id === currentUser?.id
+                          ? "justify-end"
+                          : "justify-start"
+                      }`}
+                    >
                       <div
-                        key={msg.id}
-                        className={`flex ${
+                        className={`max-w-[70%] p-3 rounded-lg shadow-sm ${
                           msg.sender_id === currentUser?.id
-                            ? "justify-end"
-                            : "justify-start"
+                            ? "bg-primary text-primary-foreground ml-12"
+                            : "bg-accent mr-12"
                         }`}
                       >
-                        <div
-                          className={`max-w-[70%] p-3 rounded-lg ${
-                            msg.sender_id === currentUser?.id
-                              ? "bg-primary text-primary-foreground"
-                              : "bg-accent"
-                          }`}
-                        >
-                          {msg.type === 'voice' ? (
-                            <audio controls src={msg.content} className="max-w-full" />
-                          ) : (
-                            <p className="break-words">{msg.content}</p>
+                        <p className="break-words">{msg.content}</p>
+                        <div className="flex justify-between items-center mt-1 text-xs opacity-70">
+                          <span>{format(new Date(msg.created_at), "HH:mm")}</span>
+                          {msg.sender_id === currentUser?.id && (
+                            <span className="ml-2">{getMessageStatus(msg)}</span>
                           )}
-                          <div className="flex justify-between items-center mt-1 text-xs opacity-70">
-                            <span>{format(new Date(msg.created_at), "HH:mm")}</span>
-                            {msg.sender_id === currentUser?.id && (
-                              <span className="ml-2">{getMessageStatus(msg)}</span>
-                            )}
-                          </div>
                         </div>
                       </div>
-                    ))}
-                  </div>
-                </ScrollArea>
-                
-                <div className="p-4 border-t">
-                  <div className="flex gap-2">
-                    <Input
-                      value={message}
-                      onChange={(e) => setMessage(e.target.value)}
-                      placeholder="Введите сообщение..."
-                      onKeyPress={(e) => e.key === "Enter" && sendMessage(message)}
-                      className="flex-1"
-                    />
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className={isRecording ? "bg-red-500 text-white" : ""}
-                      onClick={isRecording ? stopRecording : startRecording}
-                    >
-                      {isRecording ? <Square className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
-                    </Button>
-                    <Button onClick={() => sendMessage(message)}>
-                      Отправить
-                    </Button>
-                  </div>
+                    </div>
+                  ))}
                 </div>
-              </>
-            ) : (
-              <div className="h-full flex items-center justify-center text-gray-500">
-                Выберите диалог для начала общения
+              </ScrollArea>
+              
+              <div className="p-4 border-t bg-background">
+                <div className="flex gap-2 items-center">
+                  <Input
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    placeholder="Введите сообщение..."
+                    onKeyPress={(e) => e.key === "Enter" && sendMessage(message)}
+                    className="flex-1"
+                  />
+                  <Button onClick={() => sendMessage(message)}>
+                    <Send className="h-5 w-5" />
+                  </Button>
+                </div>
               </div>
-            )}
-          </div>
-        )}
+            </>
+          ) : (
+            <div className="h-full flex items-center justify-center text-muted-foreground">
+              Выберите диалог для начала общения
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
-
 };
 
 export default Messages;
