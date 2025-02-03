@@ -8,7 +8,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Settings, LogOut, User, Edit, Share2 } from "lucide-react";
+import { Settings, LogOut, User, Edit, Share2, Award, Medal, FileText, History } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
@@ -42,7 +42,7 @@ export function ProfileHeader({ profile, isEditing, setIsEditing, session }: Pro
   };
 
   return (
-    <div className="relative w-full p-6 rounded-lg bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-900">
+    <div className="relative w-full p-6 rounded-lg bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-900 animate-fade-in">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Avatar className="w-24 h-24 border-4 border-white shadow-lg">
@@ -56,6 +56,9 @@ export function ProfileHeader({ profile, isEditing, setIsEditing, session }: Pro
             <p className="text-sm text-muted-foreground">
               Рейтинг: {profile?.rating || 0} • Ранг: {profile?.rank || "Новичок"}
             </p>
+            <p className="text-sm text-muted-foreground">
+              Статус: {profile?.status || "Активный участник"}
+            </p>
           </div>
         </div>
         
@@ -68,10 +71,27 @@ export function ProfileHeader({ profile, isEditing, setIsEditing, session }: Pro
           <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuLabel>Мой профиль</DropdownMenuLabel>
             <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => navigate("/profile")}>
+              <User className="w-4 h-4 mr-2" />
+              Просмотр профиля
+            </DropdownMenuItem>
             <DropdownMenuItem onClick={() => setIsEditing(!isEditing)}>
               <Edit className="w-4 h-4 mr-2" />
               {isEditing ? "Отменить редактирование" : "Редактировать профиль"}
             </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => navigate("/achievements")}>
+              <Award className="w-4 h-4 mr-2" />
+              Мои достижения
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => navigate("/certificates")}>
+              <FileText className="w-4 h-4 mr-2" />
+              Сертификаты
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => navigate("/history")}>
+              <History className="w-4 h-4 mr-2" />
+              История участия
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => navigate("/settings")}>
               <Settings className="w-4 h-4 mr-2" />
               Настройки
