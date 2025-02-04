@@ -12,6 +12,7 @@ import { MessageBubble } from "@/components/chat/MessageBubble";
 import { ChatHeader } from "@/components/chat/ChatHeader";
 import { ChatInput } from "@/components/chat/ChatInput";
 import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
 const Messages = () => {
   const [selectedUser, setSelectedUser] = useState<any>(null);
