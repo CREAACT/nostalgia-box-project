@@ -11,6 +11,7 @@ import { useNavigate } from "react-router-dom";
 import { MessageBubble } from "@/components/chat/MessageBubble";
 import { ChatHeader } from "@/components/chat/ChatHeader";
 import { ChatInput } from "@/components/chat/ChatInput";
+import { format } from "date-fns";
 
 const Messages = () => {
   const [selectedUser, setSelectedUser] = useState<any>(null);
