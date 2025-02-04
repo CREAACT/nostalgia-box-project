@@ -199,36 +199,37 @@ const Messages = () => {
   });
 
   return (
-    <div className="p-4 md:p-8 max-w-6xl mx-auto h-[calc(100vh-4rem)]">
-      <h1 className="text-3xl font-bold mb-6">Сообщения</h1>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 h-[calc(100vh-12rem)] bg-background rounded-lg shadow-sm">
+    <div className="p-2 md:p-4 max-w-6xl mx-auto h-[calc(100vh-4rem)]">
+      <h1 className="text-2xl font-bold mb-4">Сообщения</h1>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 h-[calc(100vh-8rem)] bg-background rounded-lg shadow-sm overflow-hidden">
         {(!isMobile || !showChat) && (
-          <div className="border-r p-4 flex flex-col h-full">
-            <div className="mb-4">
+          <div className="border-r flex flex-col h-full">
+            <div className="p-3">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                 <Input
-                  className="pl-10"
+                  className="pl-9"
                   placeholder="Поиск чатов..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
               </div>
             </div>
-            <ScrollArea className="flex-1">
-              <div className="space-y-2">
+            <ScrollArea className="flex-1 px-3">
+              <div className="space-y-1">
                 {filteredConversations?.map((conv: any) => {
                   const otherUser = conv.sender.id === currentUser?.id ? conv.receiver : conv.sender;
                   const fullName = `${otherUser.first_name || ''} ${otherUser.last_name || ''}`.trim() || otherUser.username;
                   return (
                     <div
                       key={conv.id}
-                      className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer hover:bg-accent/50 transition-colors ${
+                      className={cn(
+                        "flex items-center gap-3 p-3 rounded-lg cursor-pointer hover:bg-accent/50 transition-colors",
                         selectedUser?.id === otherUser.id ? "bg-accent" : ""
-                      }`}
+                      )}
                       onClick={() => handleSelectUser(otherUser)}
                     >
-                      <Avatar className="h-12 w-12">
+                      <Avatar className="h-10 w-10">
                         <AvatarImage src={otherUser.avatar_url} />
                         <AvatarFallback>
                           {otherUser.username?.charAt(0)?.toUpperCase() || "U"}
@@ -236,7 +237,7 @@ const Messages = () => {
                       </Avatar>
                       <div className="flex-1 min-w-0">
                         <p className="font-medium truncate">{fullName}</p>
-                        <p className="text-sm text-muted-foreground truncate">
+                        <p className="text-xs text-muted-foreground truncate">
                           {format(new Date(conv.created_at), "dd.MM.yyyy HH:mm")}
                         </p>
                       </div>
@@ -260,8 +261,8 @@ const Messages = () => {
                 showBackButton={isMobile}
               />
               
-              <ScrollArea className="flex-1 p-4">
-                <div className="space-y-4 max-w-3xl mx-auto">
+              <ScrollArea className="flex-1 px-4">
+                <div className="space-y-3 py-4 max-w-3xl mx-auto">
                   {messages?.map((msg) => (
                     <MessageBubble
                       key={msg.id}
