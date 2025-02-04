@@ -5,11 +5,12 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/components/ui/use-toast";
-import { format } from "date-fns";
-import { Button } from "@/components/ui/button";
-import { ChevronLeft, Search, Send, User } from "lucide-react";
+import { Search } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useNavigate } from "react-router-dom";
+import { MessageBubble } from "@/components/chat/MessageBubble";
+import { ChatHeader } from "@/components/chat/ChatHeader";
+import { ChatInput } from "@/components/chat/ChatInput";
 
 const Messages = () => {
   const [selectedUser, setSelectedUser] = useState<any>(null);
@@ -176,11 +177,17 @@ const Messages = () => {
     setSelectedUser(null);
   };
 
+  const handleViewProfile = () => {
+    if (selectedUser) {
+      navigate(`/profile/${selectedUser.id}`);
+    }
+  };
+
   const getMessageStatus = (msg: any) => {
     if (msg.sender_id === currentUser?.id) {
-      return msg.read_at ? "Прочитано" : "Отправлено";
+      return msg.read_at ? "read" : "sent";
     }
-    return "";
+    return undefined;
   };
 
   const filteredConversations = conversations?.filter((conv: any) => {
@@ -189,12 +196,6 @@ const Messages = () => {
     return fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
            otherUser.username?.toLowerCase().includes(searchQuery.toLowerCase());
   });
-
-  const handleViewProfile = () => {
-    if (selectedUser) {
-      navigate(`/profile/${selectedUser.id}`);
-    }
-  };
 
   return (
     <div className="p-4 md:p-8 max-w-6xl mx-auto h-[calc(100vh-4rem)]">
@@ -249,82 +250,34 @@ const Messages = () => {
         <div className="md:col-span-2 flex flex-col h-full">
           {selectedUser ? (
             <>
-              <div className="flex items-center gap-3 p-4 border-b bg-accent/50">
-                {isMobile && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={handleBack}
-                    className="mr-2"
-                  >
-                    <ChevronLeft className="h-5 w-5" />
-                  </Button>
-                )}
-                <Avatar className="h-12 w-12 cursor-pointer" onClick={handleViewProfile}>
-                  <AvatarImage src={selectedUser.avatar_url} />
-                  <AvatarFallback>
-                    {selectedUser.username?.charAt(0)?.toUpperCase() || "U"}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1 cursor-pointer" onClick={handleViewProfile}>
-                  <h2 className="text-lg font-semibold">
-                    {`${selectedUser.first_name || ''} ${selectedUser.last_name || ''}`.trim() || selectedUser.username}
-                  </h2>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={handleViewProfile}
-                >
-                  <User className="h-5 w-5" />
-                </Button>
-              </div>
+              <ChatHeader
+                avatar={selectedUser.avatar_url}
+                name={`${selectedUser.first_name || ''} ${selectedUser.last_name || ''}`.trim() || selectedUser.username}
+                username={selectedUser.username}
+                onBack={handleBack}
+                onViewProfile={handleViewProfile}
+                showBackButton={isMobile}
+              />
               
               <ScrollArea className="flex-1 p-4">
-                <div className="space-y-4">
+                <div className="space-y-4 max-w-3xl mx-auto">
                   {messages?.map((msg) => (
-                    <div
+                    <MessageBubble
                       key={msg.id}
-                      className={`flex animate-fade-in ${
-                        msg.sender_id === currentUser?.id
-                          ? "justify-end"
-                          : "justify-start"
-                      }`}
-                    >
-                      <div
-                        className={`max-w-[70%] p-3 rounded-lg shadow-sm ${
-                          msg.sender_id === currentUser?.id
-                            ? "bg-primary text-primary-foreground ml-12"
-                            : "bg-accent mr-12"
-                        }`}
-                      >
-                        <p className="break-words">{msg.content}</p>
-                        <div className="flex justify-between items-center mt-1 text-xs opacity-70">
-                          <span>{format(new Date(msg.created_at), "HH:mm")}</span>
-                          {msg.sender_id === currentUser?.id && (
-                            <span className="ml-2">{getMessageStatus(msg)}</span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
+                      content={msg.content}
+                      isCurrentUser={msg.sender_id === currentUser?.id}
+                      timestamp={msg.created_at}
+                      status={getMessageStatus(msg)}
+                    />
                   ))}
                 </div>
               </ScrollArea>
               
-              <div className="p-4 border-t bg-background">
-                <div className="flex gap-2 items-center">
-                  <Input
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                    placeholder="Введите сообщение..."
-                    onKeyPress={(e) => e.key === "Enter" && sendMessage(message)}
-                    className="flex-1"
-                  />
-                  <Button onClick={() => sendMessage(message)}>
-                    <Send className="h-5 w-5" />
-                  </Button>
-                </div>
-              </div>
+              <ChatInput
+                value={message}
+                onChange={setMessage}
+                onSend={() => sendMessage(message)}
+              />
             </>
           ) : (
             <div className="h-full flex items-center justify-center text-muted-foreground">
